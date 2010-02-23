@@ -1,5 +1,7 @@
 compile: 
 	mkdir -p ./test/ebin
+    git submodule update --init
+    @(cd ./deps/coverize; make)
 	erl -make
 	
 clean:
