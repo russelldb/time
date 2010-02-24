@@ -2,6 +2,7 @@ compile:
 	mkdir -p ./test/ebin
 	git submodule update --init
 	@(cd ./deps/coverize; make)
+	@(cd ./deps/erlang-uuid; make)
 	erl -make
 	
 clean:

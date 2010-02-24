@@ -1,0 +1,1 @@
+-record(time, {client, rate, rate_period=day, units=1, date}).
