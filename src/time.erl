@@ -11,17 +11,20 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/0, time/1]).
+-export([add_today_from_template/1, create_template/2,
+	 start_link/0, time/1]).
 
 %% gen_server callbacks
--export([init/1, handle_call/3, handle_cast/2, handle_info/2,
-	 terminate/2, code_change/3]).
+-export([code_change/3, handle_call/3, handle_cast/2,
+	 handle_info/2, init/1, terminate/2]).
 
 -include("time.hrl").
 
--define(SERVER, ?MODULE). 
--define(BUCKET, <<"work">>).
+-define(SERVER, ?MODULE).
 
+-define(WORK, <<"work">>).
+
+-define(TEMPLATES, <<"templates">>).
 
 %%%===================================================================
 %%% API
@@ -35,7 +38,8 @@
 %% @end
 %%--------------------------------------------------------------------
 start_link() ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, application:get_all_env(), []).
+    gen_server:start_link({local, ?SERVER}, ?MODULE,
+			  application:get_all_env(), []).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -46,11 +50,18 @@ start_link() ->
 %% @end
 %%--------------------------------------------------------------------
 time(Time) when is_record(Time, time) ->
-    gen_server:call(?SERVER, Time).
+    gen_server:call(?SERVER, {add, Time}).
 
+create_template(Name, TimeTemplate)
+    when is_atom(Name), is_record(TimeTemplate, time) ->
+    gen_server:call(?SERVER,
+		    {register, Name, TimeTemplate}).
 
-
-
+add_today_from_template(Name) when is_atom(Name) ->
+    Template = get_template(Name),
+    {Date, _} = erlang:localtime(),
+    Time = Template#time{date = Date},
+    time(Time).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -87,15 +98,30 @@ init(Args) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_call(Time, _From, State) when is_record(Time, time) ->
+handle_call({add, Time}, _From, State)
+    when is_record(Time, time) ->
     Id = uuid:v4(),
-    O = riak_object:new(?BUCKET, Id, Time),
+    O = riak_object:new(?WORK, Id, Time),
     error_logger:info_msg("Putting : ~p~n", [Time]),
     Reply = {State:put(O, 1), Id},
     {reply, Reply, State};
+handle_call({register, Name, TimeTemplate}, _From,
+	    State)
+    when is_atom(Name), is_record(TimeTemplate, time) ->
+    O = riak_object:new(?TEMPLATES,
+			atom_to_binary(Name, utf8), TimeTemplate),
+    error_logger:info_msg("Creating template : ~p value: ~p ~n",
+			  [Name, TimeTemplate]),
+    Reply = {State:put(O, 1), Name},
+    {reply, Reply, State};
+handle_call({get_template, Name}, _From, State)
+    when is_atom(Name) ->
+    {ok, O} = State:get(?TEMPLATES,
+			atom_to_binary(Name, utf8), 1),
+    Template = riak_object:get_value(O),
+    {reply, Template, State};
 handle_call(_Request, _From, State) ->
-    Reply = ok,
-    {reply, Reply, State}.
+    Reply = ok, {reply, Reply, State}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -107,8 +133,7 @@ handle_call(_Request, _From, State) ->
 %%                                  {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_cast(_Msg, State) ->
-    {noreply, State}.
+handle_cast(_Msg, State) -> {noreply, State}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -120,8 +145,7 @@ handle_cast(_Msg, State) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_info(_Info, State) ->
-    {noreply, State}.
+handle_info(_Info, State) -> {noreply, State}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -134,8 +158,7 @@ handle_info(_Info, State) ->
 %% @spec terminate(Reason, State) -> void()
 %% @end
 %%--------------------------------------------------------------------
-terminate(_Reason, _State) ->
-    ok.
+terminate(_Reason, _State) -> ok.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -145,10 +168,10 @@ terminate(_Reason, _State) ->
 %% @spec code_change(OldVsn, State, Extra) -> {ok, NewState}
 %% @end
 %%--------------------------------------------------------------------
-code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.
+code_change(_OldVsn, State, _Extra) -> {ok, State}.
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-
+get_template(Name) when is_atom(Name) ->
+    gen_server:call(?SERVER, {get_template, Name}).

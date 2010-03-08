@@ -4,6 +4,5 @@
 
 
 all_test_() ->
-	[{module, test_user_db},
-	 {module, string_util_test}].
+	[{module, test_time}].
 	

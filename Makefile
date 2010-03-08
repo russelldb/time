@@ -4,16 +4,18 @@ compile:
 	@(cd ./deps/coverize; make)
 	@(cd ./deps/erlang-uuid; make)
 	erl -make
-	
+	erl -noshell -eval 'erl_tidy:dir("src",[verbose]).' -s erlang halt
+
 clean:
 	rm -rf ./ebin/*.beam
 	rm -rf ./test/ebin/*.beam
 	rm -rf ./coverage/*.html
-	
-cover_test:
-	erl -make -Dtest
-	erl -noshell -pa ebin -pa test/ebin -s test_all test -s test_all cover_report -s init stop
-	
+	rm -f ./src/*.bak
+
 coverage: compile
 	mkdir -p coverage
-	erl -noshell -pa deps/coverize/ebin -pa ebin -pa test/ebin -s eunit_helper run_cover -s init stop
+	erl -noshell -pa $(RIAK_EBIN) -pa deps/coverize/ebin -pa deps/erlang-uuid/ebin/ -pa ebin -pa test/ebin -s eunit_helper run_cover -s init stop -name time_test -setcookie riak
+
+
+rmbak:
+	rm -f ./src/*.bak
