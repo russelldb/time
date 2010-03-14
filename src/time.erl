@@ -12,7 +12,7 @@
 
 %% API
 -export([today_from_template/1, template/2,
-	 start_link/0, add/1]).
+	 start_link/0, add/1, list_templates/0]).
 
 %% gen_server callbacks
 -export([code_change/3, handle_call/3, handle_cast/2,
@@ -63,6 +63,9 @@ today_from_template(Name) when is_atom(Name) ->
     {Date, _} = erlang:localtime(),
     Time = Template#time{date = Date},
     gen_server:call(?SERVER, {add, Time}).
+
+list_templates() ->
+    gen_server:call(?SERVER, {list_templates}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -127,6 +130,9 @@ handle_call({get_template, Name}, _From, State)
 			atom_to_binary(Name, utf8), 1),
     Template = riak_object:get_value(O),
     {reply, Template, State};
+handle_call({list_templates}, _From, State) ->
+    {ok, Templates} = State:list_keys(?TEMPLATES),
+    {reply, Templates, State};
 handle_call(_Request, _From, State) ->
     Reply = ok, {reply, Reply, State}.
 

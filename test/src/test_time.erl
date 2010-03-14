@@ -34,7 +34,8 @@ generate_tests(Riak) ->
     generate_write_template_tests(Riak) ++
 	generate_update_template(Riak) ++
 	generate_add(Riak) ++
-	generate_today_from_template(Riak).
+	generate_today_from_template(Riak) ++
+	generate_list_templates(Riak).
 
 generate_write_template_tests(Riak) ->
     Template = #time{client = list_to_binary("TestClient"),
@@ -78,3 +79,25 @@ generate_today_from_template(Riak) ->
     {ok, O} = Riak:get(?WORK, Key, 1),
     Actual = riak_object:get_value(O),
     [?_assertMatch(Expected, Actual)].
+
+generate_list_templates(Riak) ->
+    {ok, TKeys} = Riak:list_keys(?TEMPLATES),
+    delete_data(Riak, ?TEMPLATES,  TKeys),
+    Id1 = list_to_binary("TC1"),
+    Template = #time{client = Id1,
+		     rate = 1, rate_period = day, units = 1},
+    
+    O = riak_object:new(?TEMPLATES, Id1, Template),
+
+    Riak:put(O, 1),
+
+    Id2 = list_to_binary("TC2"),
+    T2 = Template#time{client = Id2},
+    O2 = riak_object:new(?TEMPLATES, Id2, T2),
+
+    Riak:put(O2, 1),
+    
+    Templates = time:list_templates(),
+    Expected = [Id1, Id2],
+    [?_assertMatch(Expected, Templates)].
+    
