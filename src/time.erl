@@ -130,10 +130,14 @@ handle_call({register, Name, TimeTemplate}, _From, State)  when is_atom(Name), i
     {reply, Reply, State};
 handle_call({get_template, Name}, _From, State)
   when is_atom(Name) ->
-    {ok, O} = State:get(?TEMPLATES,
-			atom_to_binary(Name, utf8), 1),
-    Template = riak_object:get_value(O),
-    {reply, Template, State};
+    case State:get(?TEMPLATES,
+		   atom_to_binary(Name, utf8), 1) of
+	{ok, O} ->
+	    Reply = riak_object:get_value(O);
+	{error, notfound} ->
+	    Reply = undefined
+    end,
+    {reply, Reply, State};
 handle_call({list_templates}, _From, State) ->
     {ok, Templates} = State:list_keys(?TEMPLATES),
     {reply, Templates, State};
