@@ -13,7 +13,7 @@
 
 %% API
 -export([today_from_template/1, template/2,
-	 start_link/0, add/1, list_templates/0]).
+	 start_link/0, add/1, list_templates/0, get_template/1]).
 
 %% gen_server callbacks
 -export([code_change/3, handle_call/3, handle_cast/2,
@@ -67,6 +67,9 @@ today_from_template(Name) when is_atom(Name) ->
 
 list_templates() ->
     gen_server:call(?SERVER, {list_templates}).
+
+get_template(Name) when is_atom(Name) ->
+    gen_server:call(?SERVER, {get_template, Name}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -187,6 +190,5 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-get_template(Name) when is_atom(Name) ->
-    gen_server:call(?SERVER, {get_template, Name}).
+
 
