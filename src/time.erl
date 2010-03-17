@@ -13,7 +13,7 @@
 
 %% API
 -export([today_from_template/1, template/2,
-	 start_link/0, add/1, list_templates/0, get_template/1]).
+	 start_link/0, add/1, list_templates/0, get_template/1, delete_template/1]).
 
 %% gen_server callbacks
 -export([code_change/3, handle_call/3, handle_cast/2,
@@ -70,6 +70,9 @@ list_templates() ->
 
 get_template(Name) when is_atom(Name) ->
     gen_server:call(?SERVER, {get_template, Name}).
+
+delete_template(Name) when is_atom(Name) ->
+    gen_server:call(?SERVER, {delete_template, Name}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -141,6 +144,9 @@ handle_call({get_template, Name}, _From, State)
 handle_call({list_templates}, _From, State) ->
     {ok, Templates} = State:list_keys(?TEMPLATES),
     {reply, Templates, State};
+handle_call({delete_template, Name}, _From, State) ->
+    Reply = State:delete(?TEMPLATES, atom_to_binary(Name, utf8)),
+    {reply, Reply, State};
 handle_call(_Request, _From, State) ->
     Reply = ok, {reply, Reply, State}.
 
