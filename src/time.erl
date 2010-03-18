@@ -145,7 +145,7 @@ handle_call({list_templates}, _From, State) ->
     {ok, Templates} = State:list_keys(?TEMPLATES),
     {reply, Templates, State};
 handle_call({delete_template, Name}, _From, State) ->
-    Reply = State:delete(?TEMPLATES, atom_to_binary(Name, utf8)),
+    Reply = State:delete(?TEMPLATES, atom_to_binary(Name, utf8), 1),
     {reply, Reply, State};
 handle_call(_Request, _From, State) ->
     Reply = ok, {reply, Reply, State}.
