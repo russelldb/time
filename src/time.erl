@@ -13,7 +13,7 @@
 
 %% API
 -export([today_from_template/1, template/2,
-	 start_link/0, add/1, list_templates/0, get_template/1, delete_template/1, get_time/1]).
+	 start_link/0, add/1, list_templates/0, get_template/1, delete_template/1, get_time/1, delete_time/1]).
 
 %% gen_server callbacks
 -export([code_change/3, handle_call/3, handle_cast/2,
@@ -55,6 +55,9 @@ add(Time) when is_record(Time, time) ->
 
 get_time(UUID) ->
     gen_server:call(?SERVER, {get, UUID}).
+
+delete_time(UUID) ->
+    gen_server:call(?SERVER, {delete, UUID}).
 
 template(Name, TimeTemplate)
   when is_atom(Name), is_record(TimeTemplate, time) ->
@@ -159,6 +162,9 @@ handle_call({get, UUID}, _From, State) ->
 	_ ->
 	    Reply = error
     end,
+    {reply, Reply, State};
+handle_call({delete, UUID}, _From, State) ->
+    Reply = State:delete(?WORK, list_to_binary(UUID), 1),
     {reply, Reply, State};
 handle_call(_Request, _From, State) ->
     Reply = ok, {reply, Reply, State}.
