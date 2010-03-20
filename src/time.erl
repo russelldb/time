@@ -111,7 +111,7 @@ init(Args) ->
 %%--------------------------------------------------------------------
 handle_call({add, Time}, _From, State)
   when is_record(Time, time) ->
-    Id = uuid:v4(),
+    Id = list_to_binary(uuid:to_string(uuid:v4())),
     O = riak_object:new(?WORK, Id, Time),
     error_logger:info_msg("Putting : ~p~n", [Time]),
     Reply = {State:put(O, 1), Id},
