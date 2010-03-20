@@ -13,7 +13,7 @@
 
 %% API
 -export([today_from_template/1, template/2,
-	 start_link/0, add/1, list_templates/0, get_template/1, delete_template/1]).
+	 start_link/0, add/1, list_templates/0, get_template/1, delete_template/1, get_time/1]).
 
 %% gen_server callbacks
 -export([code_change/3, handle_call/3, handle_cast/2,
@@ -52,6 +52,9 @@ start_link() ->
 %%--------------------------------------------------------------------
 add(Time) when is_record(Time, time) ->
     gen_server:call(?SERVER, {add, Time}).
+
+get_time(UUID) ->
+    gen_server:call(?SERVER, {get, UUID}).
 
 template(Name, TimeTemplate)
   when is_atom(Name), is_record(TimeTemplate, time) ->
@@ -146,6 +149,16 @@ handle_call({list_templates}, _From, State) ->
     {reply, Templates, State};
 handle_call({delete_template, Name}, _From, State) ->
     Reply = State:delete(?TEMPLATES, atom_to_binary(Name, utf8), 1),
+    {reply, Reply, State};
+handle_call({get, UUID}, _From, State) ->
+    case State:get(?WORK, list_to_binary(UUID), 1) of
+	{ok, O} ->
+	    Reply = riak_object:get_value(O);
+	{error, notfound} ->
+	    Reply = undefined;
+	_ ->
+	    Reply = error
+    end,
     {reply, Reply, State};
 handle_call(_Request, _From, State) ->
     Reply = ok, {reply, Reply, State}.
