@@ -13,7 +13,7 @@
 
 %% API
 -export([today_from_template/1, template/2,
-	 start_link/0, add/1, list_templates/0, get_template/1, delete_template/1, get_time/1, delete_time/1]).
+	 start_link/0, add/1, list_templates/0, get_template/1, delete_template/1, get_time/1, delete_time/1, get_work/0]).
 
 %% gen_server callbacks
 -export([code_change/3, handle_call/3, handle_cast/2,
@@ -79,6 +79,10 @@ get_template(Name) when is_atom(Name) ->
 
 delete_template(Name) when is_atom(Name) ->
     gen_server:call(?SERVER, {delete_template, Name}).
+
+get_work() ->
+    gen_server:call(?SERVER, {get_all}).
+
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -166,6 +170,14 @@ handle_call({get, UUID}, _From, State) ->
 handle_call({delete, UUID}, _From, State) ->
     Reply = State:delete(?WORK, list_to_binary(UUID), 1),
     {reply, Reply, State};
+handle_call({get_all}, _From, State) ->
+    Keys = State:list_keys(?WORK),
+    BK = [ {?WORK, Key} || Key <- Keys],
+    All = fun(W, undefined, none) ->
+		  [riak_object:get_value(W)]
+	  end,
+    {ok, [L]} = State:mapred(BK, [{map, {qfun, All}, none, true}]),
+    {reply, L, State};
 handle_call(_Request, _From, State) ->
     Reply = ok, {reply, Reply, State}.
 
