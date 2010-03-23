@@ -171,12 +171,10 @@ handle_call({delete, UUID}, _From, State) ->
     Reply = State:delete(?WORK, list_to_binary(UUID), 1),
     {reply, Reply, State};
 handle_call({get_all}, _From, State) ->
-    Keys = State:list_keys(?WORK),
-    BK = [ {?WORK, Key} || Key <- Keys],
     All = fun(W, undefined, none) ->
 		  [riak_object:get_value(W)]
 	  end,
-    {ok, [L]} = State:mapred(BK, [{map, {qfun, All}, none, true}]),
+    {ok, L} = State:mapred_bucket(?WORK, [{map, {qfun, All}, none, true}]),
     {reply, L, State};
 handle_call(_Request, _From, State) ->
     Reply = ok, {reply, Reply, State}.
