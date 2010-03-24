@@ -81,7 +81,7 @@ delete_template(Name) when is_atom(Name) ->
     gen_server:call(?SERVER, {delete_template, Name}).
 
 get_work() ->
-    gen_server:call(?SERVER, {get_all}).
+    gen_server:call(?SERVER, {get_all, fun(W, undefined, none) ->[ riak_object:get_value(W) ] end}).
 
 
 %%%===================================================================
@@ -170,11 +170,8 @@ handle_call({get, UUID}, _From, State) ->
 handle_call({delete, UUID}, _From, State) ->
     Reply = State:delete(?WORK, list_to_binary(UUID), 1),
     {reply, Reply, State};
-handle_call({get_all}, _From, State) ->
-    All = fun(W, undefined, none) ->
-		  [riak_object:get_value(W)]
-	  end,
-    {ok, L} = State:mapred_bucket(?WORK, [{map, {qfun, All}, none, true}]),
+handle_call({get_all, MapFun}, _From, State) ->
+    {ok, L} = State:mapred_bucket(?WORK, [{map, {qfun, MapFun}, none, true}]),
     {reply, L, State};
 handle_call(_Request, _From, State) ->
     Reply = ok, {reply, Reply, State}.
