@@ -101,9 +101,14 @@ get_work() ->
 %%--------------------------------------------------------------------
 init(Args) ->
     error_logger:info_msg("Env : ~p~n", [Args]),
-    RiakNode = proplists:get_value(riak_node, Args),
-    error_logger:info_msg("RiakNode : ~p~n", [RiakNode]),
-    riak:client_connect(RiakNode).
+    case proplists:get_value(riak_node, Args) of 
+	undefined -> 
+	    error_logger:info_msg("Local client~n", []),
+	    riak:local_client();
+	RiakNode ->
+	    error_logger:info_msg("Riak Node: ~p~n", [RiakNode]),
+	    riak:client_connect(RiakNode)
+    end.
 
 %%--------------------------------------------------------------------
 %% @private

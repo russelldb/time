@@ -10,8 +10,11 @@
 -define(TEMPLATES, <<"templates">>).
 
 setup() ->
+    application:start(sasl),
+    application:start(crypto),
+    application:start(riak),
     application:start(time),
-    {ok, Riak} = riak:client_connect('riak@127.0.0.1'),
+    {ok, Riak} = riak:local_client(),
     Riak.
 
 
@@ -20,7 +23,10 @@ teardown(Riak) ->
     {ok, WorkKeys} = Riak:list_keys(?WORK),
     {ok, TKeys} = Riak:list_keys(?TEMPLATES),
     delete_data(Riak, ?WORK, WorkKeys),
-    delete_data(Riak, ?TEMPLATES, TKeys).
+    delete_data(Riak, ?TEMPLATES, TKeys),
+    application:stop(riak),
+    application:stop(crytpo),
+    application:stop(sasl).
 
 delete_data(_, _, []) -> ok;
 delete_data(Riak, Bucket, [Key | T]) ->
@@ -69,7 +75,7 @@ generate_add(Riak) ->
     {ok, Obj} = Riak:get(?WORK, Key, 1),
     T = riak_object:get_value(Obj),
     [?_assertMatch(Time, T)].
-    
+
 generate_today_from_template(Riak) ->
     {Date, _} = erlang:localtime(),
     Template = #time{client = list_to_binary("TestClient"), rate = 1, rate_period = day, units = 1},
@@ -86,7 +92,7 @@ generate_list_templates(Riak) ->
     Id1 = list_to_binary("TC1"),
     Template = #time{client = Id1,
 		     rate = 1, rate_period = day, units = 1},
-    
+
     O = riak_object:new(?TEMPLATES, Id1, Template),
 
     Riak:put(O, 1),
@@ -96,8 +102,8 @@ generate_list_templates(Riak) ->
     O2 = riak_object:new(?TEMPLATES, Id2, T2),
 
     Riak:put(O2, 1),
-    
+
     Templates = time:list_templates(),
     Expected = [Id1, Id2],
     [?_assertMatch(Expected, Templates)].
-    
+

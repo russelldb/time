@@ -13,7 +13,7 @@ clean:
 
 coverage: compile
 	mkdir -p coverage
-	erl -noshell -pa $(RIAK_EBIN) -pa deps/coverize/ebin -pa deps/erlang-uuid/ebin/ -pa ebin -pa test/ebin -s eunit_helper run_cover -s init stop -name time_test -setcookie riak
+	erl -noshell -pa $(RIAK_EBIN) -pa deps/coverize/ebin -pa deps/erlang-uuid/ebin/ -pa ebin -pa test/ebin -s eunit_helper run_cover -s init stop -name time_test -config test/app.config
 
 rmbak:
 	rm -f ./src/*.bak
