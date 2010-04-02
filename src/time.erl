@@ -71,7 +71,7 @@ template(Name, TimeTemplate)
 
 today_from_template(Name) when is_atom(Name) ->
     case get_template(Name) of
-	undefined -> 
+	{error, notfound} -> 
 	    {unknown_template, Name};
 	Template when is_record(Template, time) ->
 	    {Date, _} = erlang:localtime(),
@@ -160,8 +160,8 @@ handle_call({get_template, Name}, _From, State)
 		   atom_to_binary(Name, utf8), 1) of
 	{ok, O} ->
 	    Reply = riak_object:get_value(O);
-	{error, notfound} ->
-	    Reply = undefined
+	Ex ->
+	    Reply = Ex
     end,
     {reply, Reply, State};
 handle_call({list_templates}, _From, State) ->
