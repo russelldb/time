@@ -1,6 +1,6 @@
-[submodule "deps/coverize"]
-	path = deps/coverize
-	url = git://github.com/mmullis/coverize.git
 [submodule "deps/erlang-uuid"]
 	path = deps/erlang-uuid
 	url = git@github.com:russelldb/erlang-uuid.git
+[submodule "deps/coverize"]
+	path = deps/coverize
+	url = git://github.com/mmullis/coverize.git

@@ -1,1 +1,1 @@
--record(time, {client, rate, rate_period=day, units=1, date}).
+-record(time, {id, client, rate, rate_period=day, units=1, date}).

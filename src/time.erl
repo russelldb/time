@@ -53,10 +53,14 @@ start_link() ->
 add(Time) when is_record(Time, time) ->
     gen_server:call(?SERVER, {add, Time}).
 
-get_time(UUID) ->
+get_time(UUID) when is_list(UUID) ->
+    get_time(list_to_binary(UUID));
+get_time(UUID) when is_binary(UUID) ->
     gen_server:call(?SERVER, {get, UUID}).
 
-delete_time(UUID) ->
+delete_time(UUID) when is_list(UUID) ->
+    delete_time(list_to_binary(UUID));
+delete_time(UUID) when is_binary(UUID) ->
     gen_server:call(?SERVER, {delete, UUID}).
 
 template(Name, TimeTemplate)
@@ -66,10 +70,14 @@ template(Name, TimeTemplate)
 
 
 today_from_template(Name) when is_atom(Name) ->
-    Template = get_template(Name),
-    {Date, _} = erlang:localtime(),
-    Time = Template#time{date = Date},
-    gen_server:call(?SERVER, {add, Time}).
+    case get_template(Name) of
+	undefined -> 
+	    {unknown_template, Name};
+	Template when is_record(Template, time) ->
+	    {Date, _} = erlang:localtime(),
+	    Time = Template#time{date = Date},
+	    gen_server:call(?SERVER, {add, Time})
+    end.
 
 list_templates() ->
     gen_server:call(?SERVER, {list_templates}).
@@ -101,9 +109,14 @@ get_work() ->
 %%--------------------------------------------------------------------
 init(Args) ->
     error_logger:info_msg("Env : ~p~n", [Args]),
-    RiakNode = proplists:get_value(riak_node, Args),
-    error_logger:info_msg("RiakNode : ~p~n", [RiakNode]),
-    riak:client_connect(RiakNode).
+    case proplists:get_value(riak_node, Args) of 
+	undefined -> 
+	    error_logger:info_msg("Local client~n", []),
+	    riak:local_client();
+	RiakNode ->
+	    error_logger:info_msg("Riak Node: ~p~n", [RiakNode]),
+	    riak:client_connect(RiakNode)
+    end.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -158,17 +171,15 @@ handle_call({delete_template, Name}, _From, State) ->
     Reply = State:delete(?TEMPLATES, atom_to_binary(Name, utf8), 1),
     {reply, Reply, State};
 handle_call({get, UUID}, _From, State) ->
-    case State:get(?WORK, list_to_binary(UUID), 1) of
+    case State:get(?WORK, UUID, 1) of
 	{ok, O} ->
 	    Reply = riak_object:get_value(O);
-	{error, notfound} ->
-	    Reply = undefined;
-	_ ->
-	    Reply = error
+	Ex ->
+	    Reply = Ex
     end,
     {reply, Reply, State};
 handle_call({delete, UUID}, _From, State) ->
-    Reply = State:delete(?WORK, list_to_binary(UUID), 1),
+    Reply = State:delete(?WORK, UUID, 1),
     {reply, Reply, State};
 handle_call({get_all, MapFun}, _From, State) ->
     {ok, L} = State:mapred_bucket(?WORK, [{map, {qfun, MapFun}, none, true}]),

@@ -5,5 +5,5 @@
   {registered, [time, time_sup]},
   {applications, [kernel, stdlib]},
   {mod, {time_app,[]}},
-  {env, [{riak_node, 'riak@127.0.0.1'}]}]}.
+  {env, []}]}.
 
